@@ -1,0 +1,8 @@
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+# Keep results folder structure but maybe ignore large raw data if any? 
+# For now, we will keep results as they are small JSONs and a PNG.
+# archive/ # Uncomment if you want to exclude the archive

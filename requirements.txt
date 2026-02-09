@@ -1,0 +1,12 @@
+urllib3<2.0
+torch
+torchvision
+torchaudio
+transformers
+datasets
+peft
+accelerate
+scikit-learn
+tqdm
+matplotlib
+jupyter
