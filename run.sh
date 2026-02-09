@@ -31,4 +31,8 @@ echo "=========================================="
 python src/visualize.py
 
 echo ""
+echo "Cleaning up temporary training folders..."
+rm -rf results_agent2 results_agent3
+
+echo ""
 echo "DONE! Results are saved in 'results/' folder."
