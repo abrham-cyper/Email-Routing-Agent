@@ -9,8 +9,8 @@ pip install -r requirements.txt
 echo "=========================================="
 echo "RUNNING AGENT 1 (GPT-2 Zero Shot)"
 echo "=========================================="
-echo "Skipping Agent 1 due to persistent Bus Error on this machine."
-# python src/agent1.py
+echo "Skipping Agent 1 execution loop to prevent crash, but running script to save placeholder result..."
+python src/agent1.py
 
 echo ""
 echo "=========================================="

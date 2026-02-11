@@ -20,11 +20,24 @@ Develop an intelligent system to route customer emails to the correct department
 
 ## 🚀 How to Run
 
-### Option A: Google Colab (Recommended)
-1.  Upload `project.ipynb`.
-2.  Upload `src.zip`.
-3.  Run the first cell to unzip: `!unzip src.zip`.
-4.  Run all cells.
+### Option A: Google Colab (Recommended) 🚀
+
+1.  Upload `project_upload.zip`.
+2.  Run these 4 commands in a cell:
+    ```bash
+    # 1. Unzip
+    !unzip -o -q project_upload.zip
+    
+    # 2. Install
+    !pip install -q -r requirements.txt
+    
+    # 3. Enable Script
+    !chmod +x run.sh
+    
+    # 4. RUN ALL AGENTS
+    !./run.sh
+    ```
+    (If it asks to replace files, type `A` and Enter).
 
 ### Option B: Local Machine
 ```bash
@@ -37,3 +50,23 @@ Develop an intelligent system to route customer emails to the correct department
 *   `project.ipynb`: Main notebook for results and presentation.
 *   `results/`: Generated metrics and comparison charts.
 
+
+
+
+USE the file name that 
+ls
+ showed you: project_upload.zip.
+Type these 4 commands, one by one, pressing Enter after each:
+
+Unzip the file:
+bash
+unzip -o -q project_upload.zip
+Install requirements:
+bash
+pip install -q -r requirements.txt
+Make it runnable:
+bash
+chmod +x run.sh
+Run the Project! 🚀
+bash
+./run.sh

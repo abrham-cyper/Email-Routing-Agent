@@ -44,9 +44,14 @@ def format_ds(example):
     return {"text": prompt + completion}
 
 print("Preparing dataset (subset)...")
-# Tiny subset for CPU train run
-train_subset = train_ds.select(range(50))
-val_subset = val_ds.select(range(10))
+if torch.cuda.is_available():
+    print("🚀 GPU Detected for Training! Using MEDIUM SUBSET (2000 samples) for speed...")
+    train_subset = train_ds.select(range(2000))
+    val_subset = val_ds.select(range(200))
+else:
+    print("⚠️ CPU Detected for Training! Using TINY SUBSET (50 samples)...")
+    train_subset = train_ds.select(range(50))
+    val_subset = val_ds.select(range(10))
 
 train_data = train_subset.map(format_ds)
 val_data = val_subset.map(format_ds)
@@ -62,13 +67,13 @@ tokenized_val = val_data.map(tokenize, batched=True)
 # Train
 args = TrainingArguments(
     output_dir="./results_agent2",
-    per_device_train_batch_size=1,
+    per_device_train_batch_size=4 if torch.cuda.is_available() else 1,
     gradient_accumulation_steps=4,
     num_train_epochs=1,
     learning_rate=2e-4,
     save_strategy="no",
     eval_strategy="no",
-    use_cpu=True,
+    use_cpu=not torch.cuda.is_available(),
     dataloader_num_workers=0,
     logging_steps=5
 )
@@ -89,37 +94,43 @@ print("Training Agent 2...")
 trainer.train()
 
 # Eval
-print("Skipping Agent 2 Evaluation to prevent Bus Error on this machine...")
-# model.eval()
-# predictions = []
-# eval_ds = test_ds.select(range(50))
-# references = eval_ds["queue"]
-# start_time = time.time()
+# Eval
+# SMART EVALUATION CHECK
+if torch.cuda.is_available():
+    print("🚀 GPU Detected! Running FULL EVALUATION (Colab Mode)...")
+    model.to("cuda")
+    model.eval()
+    
+    predictions = []
+    eval_ds = test_ds # Full test set
+    references = eval_ds["queue"]
+    start_time = time.time()
 
-# for item in tqdm(eval_ds):
-#     prompt = generate_prompt(item["body"])
-#     inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024).to(device)
-#     with torch.no_grad():
-#         outputs = model.generate(**inputs, max_new_tokens=10, pad_token_id=tokenizer.pad_token_id, do_sample=False)
-#     gen = tokenizer.decode(outputs[0], skip_special_tokens=True)
-#     ans = gen[len(prompt):].strip().split('\n')[0]
-#     
-#     pred = "Unknown"
-#     for l in label_list:
-#         if l.lower() in ans.lower():
-#             pred = l
-#             break
-#     predictions.append(pred)
+    for item in tqdm(eval_ds):
+        prompt = generate_prompt(item["body"])
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024).to("cuda")
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_new_tokens=10, pad_token_id=tokenizer.pad_token_id, do_sample=False)
+        gen = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        ans = gen[len(prompt):].strip().split('\n')[0]
+        
+        pred = "Unknown"
+        for l in label_list:
+            if l.lower() in ans.lower():
+                pred = l
+                break
+        predictions.append(pred)
 
-# end_time = time.time()
-# acc = accuracy_score(references, predictions)
-# total_time = end_time - start_time
+    end_time = time.time()
+    acc = accuracy_score(references, predictions)
+    total_time = end_time - start_time
+else:
+    print("⚠️  CPU Detected: Skipping Agent 2 Evaluation to prevent Bus Error (Local Mode).")
+    acc = 0.0
+    total_time = 0.0
 
-acc = 0.0
-total_time = 0.0
-
-print(f"Agent 2 Accuracy: {acc:.4f} (Skipped)")
-print(f"Agent 2 Time: {total_time:.2f}s (Skipped)")
+print(f"Agent 2 Accuracy: {acc:.4f}")
+print(f"Agent 2 Time: {total_time:.2f}s")
 
 with open("results/agent2.json", "w") as f:
     json.dump({"accuracy": acc, "time": total_time}, f)

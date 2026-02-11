@@ -35,11 +35,27 @@ def tokenize(examples):
 def map_labels(example):
     return {"label": label2id[example["queue"]]}
 
-print("Preparing dataset (subset)...")
-# Tiny subset for CPU train run
-train_subset = train_ds.select(range(50)).map(map_labels)
-val_subset = val_ds.select(range(10)).map(map_labels)
-test_subset = test_ds.select(range(50)).map(map_labels)
+# SMART DEVICE DETECTION
+if torch.cuda.is_available():
+    print("🚀 GPU Detected! Usage: MEDIUM SUBSET (2000 samples to save time)")
+    device = "cuda"
+    train_subset = train_ds.select(range(2000)).map(map_labels)
+    val_subset = val_ds.select(range(200)).map(map_labels) 
+    test_subset = test_ds.select(range(500)).map(map_labels)
+    use_cpu_flag = False
+    batch_size = 16
+    epochs = 3
+else:
+    print("⚠️  CPU Detected! Usage: Tiny Subset (50 samples)")
+    device = "cpu"
+    train_subset = train_ds.select(range(50)).map(map_labels)
+    val_subset = val_ds.select(range(10)).map(map_labels)
+    test_subset = test_ds.select(range(50)).map(map_labels)
+    use_cpu_flag = True
+    batch_size = 4
+    epochs = 1
+
+model.to(device)
 
 tokenized_train = train_subset.map(tokenize, batched=True)
 tokenized_val = val_subset.map(tokenize, batched=True)
@@ -50,9 +66,9 @@ data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 args = TrainingArguments(
     output_dir="./results_agent3",
     learning_rate=2e-5,
-    per_device_train_batch_size=4, 
-    num_train_epochs=1,
-    use_cpu=True,
+    per_device_train_batch_size=batch_size, 
+    num_train_epochs=epochs,
+    use_cpu=use_cpu_flag,
     dataloader_num_workers=0,
     logging_steps=5,
     eval_strategy="no",

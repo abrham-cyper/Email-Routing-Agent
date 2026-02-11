@@ -37,34 +37,41 @@ if tokenizer.pad_token is None:
 def generate_prompt(text):
     return f"Classify the email into one of the following departments: Technical Support, Customer Service, Billing and Payments, Sales and Pre-Sales, General Inquiry.\n\nEmail: {text}\n\nDepartment:"
 
-# Eval
-print("Evaluating Agent 1 (Subset for speed on CPU)...")
-predictions = []
-# Use small subset for CPU testing
-eval_ds = test_ds.select(range(50)) 
-references = eval_ds["queue"]
-start_time = time.time()
+# SMART EVALUATION CHECK
+if torch.cuda.is_available():
+    print("🚀 GPU Detected! Running FULL EVALUATION (Colab Mode)...")
+    device = "cuda"
+    model.to(device)
+    
+    predictions = []
+    eval_ds = test_ds  # Run on full test set in Colab
+    references = eval_ds["queue"]
+    start_time = time.time()
 
-for item in tqdm(eval_ds):
-    prompt = generate_prompt(item["body"])
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024).to(device)
-    
-    with torch.no_grad():
-        outputs = model.generate(**inputs, max_new_tokens=10, pad_token_id=tokenizer.pad_token_id, do_sample=False)
-    
-    gen_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    answer = gen_text[len(prompt):].strip().split('\n')[0]
-    
-    pred_label = "Unknown"
-    for label in label_list:
-        if label.lower() in answer.lower():
-            pred_label = label
-            break
-    predictions.append(pred_label)
+    for item in tqdm(eval_ds):
+        prompt = generate_prompt(item["body"])
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=1024).to(device)
+        
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_new_tokens=10, pad_token_id=tokenizer.pad_token_id, do_sample=False)
+        
+        gen_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        answer = gen_text[len(prompt):].strip().split('\n')[0]
+        
+        pred_label = "Unknown"
+        for label in label_list:
+            if label.lower() in answer.lower():
+                pred_label = label
+                break
+        predictions.append(pred_label)
 
-end_time = time.time()
-acc = accuracy_score(references, predictions)
-total_time = end_time - start_time
+    end_time = time.time()
+    acc = accuracy_score(references, predictions)
+    total_time = end_time - start_time
+else:
+    print("⚠️  CPU Detected: Skipping Agent 1 Evaluation to prevent Bus Error (Local Mode).")
+    acc = 0.0
+    total_time = 0.0
 
 print(f"Agent 1 Accuracy: {acc:.4f}")
 print(f"Agent 1 Time: {total_time:.2f}s")
